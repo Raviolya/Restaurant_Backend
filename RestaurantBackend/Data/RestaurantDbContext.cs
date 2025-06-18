@@ -44,7 +44,19 @@ public class RestaurantDbContext : DbContext
             .WithMany()
             .HasForeignKey(oi => oi.MenuItemId);
 
-  
+       
+        modelBuilder.Entity<UserModel>().Property(u => u.CreatedAt).HasConversion(
+            v => v, 
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); 
+
+        modelBuilder.Entity<UserModel>().Property(u => u.UpdatedAt).HasConversion(
+            v => v, // При записи в БД
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); 
+
+        modelBuilder.Entity<UserModel>().Property(u => u.RefreshTokenExpiryTime).HasConversion(
+            v => v, // При записи в БД
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v); 
+
         var adminRoleId = Guid.Parse("00000000-0000-0000-0000-000000000001");
         var customerRoleId = Guid.Parse("00000000-0000-0000-0000-000000000002");
 
@@ -53,6 +65,7 @@ public class RestaurantDbContext : DbContext
             new RoleUserModel { Id = customerRoleId, Name = "Customer" }
         );
 
+        // Инициализация данных для категорий меню
         modelBuilder.Entity<CategoryMenuItemModel>().HasData(
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Основные блюда" },
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Закуски" },
