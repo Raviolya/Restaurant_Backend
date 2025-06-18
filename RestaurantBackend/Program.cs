@@ -8,7 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using BCrypt.Net; 
+using BCrypt.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,9 +27,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<RestaurantDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Регистрация общих репозиториев и специфичного репозитория пользователей
+// Регистрация общих репозиториев и специфичных репозиториев
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IMenuItemRepository, MenuItemRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
 
 // Настройка Swagger/OpenAPI для генерации документации API
 builder.Services.AddSwaggerGen(c =>
@@ -66,12 +69,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Включение XML-комментариев для документации Swagger (из файлов XML)
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-    if (File.Exists(xmlPath))
+    var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
+    foreach (var xmlFile in xmlFiles)
     {
-        c.IncludeXmlComments(xmlPath);
+        c.IncludeXmlComments(xmlFile);
     }
 });
 
@@ -96,22 +97,20 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true, // Проверять издателя токена
-        ValidateAudience = true, // Проверять аудиторию токена
-        ValidateLifetime = true, // Проверять срок действия токена
-        ValidateIssuerSigningKey = true, // Проверять подпись токена
-        ValidIssuer = jwtSettings["Issuer"], // Указываем ожидаемого издателя
-        ValidAudience = jwtSettings["Audience"], // Указываем ожидаемую аудиторию
-        IssuerSigningKey = new SymmetricSecurityKey(key), // Указываем ключ для проверки подписи
-        ClockSkew = TimeSpan.Zero // Отключение временного смещения для проверки срока действия
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
     };
 
-    // Настройка обработки токенов, полученных из куки
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
-            // Извлекаем токен из куки с именем "access_token"
             context.Token = context.Request.Cookies["access_token"];
             return Task.CompletedTask;
         }
@@ -121,6 +120,9 @@ builder.Services.AddAuthentication(options =>
 // Регистрация сервисов для работы с токенами и аутентификацией
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+// НОВОЕ: Регистрация сервиса для заказов
+builder.Services.AddScoped<IOrderService, OrderService>();
+
 
 var app = builder.Build();
 
@@ -155,8 +157,8 @@ using (var scope = app.Services.CreateScope())
         {
             var defaultAdminEmail = builder.Configuration["DefaultAdmin:Email"];
             var defaultAdminPassword = builder.Configuration["DefaultAdmin:Password"];
-            var defaultAdminPhone = builder.Configuration["DefaultAdmin:Phone"]; 
-            var defaultAdminName = builder.Configuration["DefaultAdmin:Name"]; 
+            var defaultAdminPhone = builder.Configuration["DefaultAdmin:Phone"];
+            var defaultAdminName = builder.Configuration["DefaultAdmin:Name"];
 
             if (string.IsNullOrEmpty(defaultAdminEmail) || string.IsNullOrEmpty(defaultAdminPassword))
             {
@@ -166,19 +168,18 @@ using (var scope = app.Services.CreateScope())
             {
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultAdminPassword);
 
-                var defaultAdminUser = new RestaurantBackend.Models.UserModel 
+                var defaultAdminUser = new RestaurantBackend.Models.UserModel
                 {
                     Id = Guid.NewGuid(),
                     Email = defaultAdminEmail,
-                    Phone = defaultAdminPhone ?? "00000000000", 
-                    Name = defaultAdminName ?? "Default Admin", 
+                    Phone = defaultAdminPhone ?? "00000000000",
+                    Name = defaultAdminName ?? "Default Admin",
                     PasswordHash = hashedPassword,
                     RoleId = adminRole.Id,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                
                 await userRepository.AddAsync(defaultAdminUser);
                 await userRepository.SaveChangesAsync();
 
@@ -203,7 +204,6 @@ app.Use(async (context, next) =>
         var token = context.Request.Cookies["access_token"];
         var jwtHandler = new JwtSecurityTokenHandler();
 
-        // Если токен можно прочитать
         if (jwtHandler.CanReadToken(token))
         {
             var jwtToken = jwtHandler.ReadJwtToken(token);
@@ -223,7 +223,7 @@ app.Use(async (context, next) =>
                             new CookieOptions
                             {
                                 HttpOnly = true,
-                                Secure = true, 
+                                Secure = true,
                                 SameSite = SameSiteMode.Strict,
                                 Expires = newTokens.Expiration
                             });
@@ -242,14 +242,12 @@ app.Use(async (context, next) =>
                     }
                     catch (SecurityTokenException ex)
                     {
-                       
                         Console.WriteLine($"Ошибка обновления токена: {ex.Message}");
                         context.Response.Cookies.Delete("access_token");
                         context.Response.Cookies.Delete("refresh_token");
                     }
                     catch (Exception ex)
                     {
-                        
                         Console.WriteLine($"Непредвиденная ошибка при обновлении токена: {ex.Message}");
                     }
                 }
@@ -257,7 +255,7 @@ app.Use(async (context, next) =>
         }
     }
 
-    await next(); // Передаем управление следующему middleware в цепочке
+    await next();
 });
 
 // Перенаправление HTTP запросов на HTTPS
@@ -271,4 +269,5 @@ app.UseAuthorization();
 // Маппинг контроллеров для обработки входящих HTTP запросов
 app.MapControllers();
 
+// Запуск приложения
 app.Run();
