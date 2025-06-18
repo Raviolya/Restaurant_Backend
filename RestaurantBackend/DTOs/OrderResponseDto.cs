@@ -10,7 +10,7 @@ namespace RestaurantBackend.DTOs
     {
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
-        public string UserName { get; set; } = string.Empty; // Имя пользователя для удобства
+        public string UserName { get; set; } = string.Empty; 
         public decimal TotalPrice { get; set; }
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }

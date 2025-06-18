@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using BCrypt.Net;
+using StackExchange.Redis; // НОВОЕ: Для Redis
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,8 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMenuItemRepository, MenuItemRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+// НОВОЕ: Регистрация репозитория для отчетов
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
 
 // Настройка Swagger/OpenAPI для генерации документации API
@@ -69,7 +72,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     // Включение XML-комментариев для документации Swagger (из файлов XML)
-    var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml");
+    // Сканируем все XML-файлы в базовом каталоге приложения
+    var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
     foreach (var xmlFile in xmlFiles)
     {
         c.IncludeXmlComments(xmlFile);
@@ -117,11 +121,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
+
 // Регистрация сервисов для работы с токенами и аутентификацией
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-// НОВОЕ: Регистрация сервиса для заказов
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 
 var app = builder.Build();
