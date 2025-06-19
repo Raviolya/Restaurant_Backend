@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; 
-using RestaurantBackend.Data; 
+using Microsoft.EntityFrameworkCore;
+using RestaurantBackend.Data;
 using RestaurantBackend.DTOs;
 using RestaurantBackend.Models;
 using RestaurantBackend.Repositories.Interfaces;
@@ -17,7 +17,7 @@ namespace RestaurantBackend.Controllers
     public class MenuItemsController : ControllerBase
     {
         private readonly IMenuItemRepository _menuItemRepository;
-        private readonly RestaurantDbContext _dbContext; 
+        private readonly RestaurantDbContext _dbContext;
 
         public MenuItemsController(IMenuItemRepository menuItemRepository, RestaurantDbContext dbContext)
         {
@@ -30,7 +30,7 @@ namespace RestaurantBackend.Controllers
         /// </summary>
         /// <returns>Список MenuItemResponseDto.</returns>
         [HttpGet]
-        [AllowAnonymous] // Доступно всем
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<MenuItemResponseDto>>> GetAllMenuItems()
         {
             var menuItems = await _menuItemRepository.SearchMenuItemsAsync(null, null, null);
@@ -45,6 +45,7 @@ namespace RestaurantBackend.Controllers
                 CategoryName = m.Category?.Name ?? "N/A",
                 Ingredients = m.Ingredients,
                 IsAvailable = m.IsAvailable,
+                ImageUrl = m.ImageUrl,
                 CreatedAt = m.CreatedAt,
                 UpdatedAt = m.UpdatedAt
             });
@@ -58,7 +59,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="id">ID элемента меню.</param>
         /// <returns>MenuItemResponseDto или NotFound.</returns>
         [HttpGet("{id}")]
-        [AllowAnonymous] // Доступно всем
+        [AllowAnonymous]
         public async Task<ActionResult<MenuItemResponseDto>> GetMenuItemById(Guid id)
         {
             var menuItem = await _menuItemRepository.GetMenuItemByIdWithCategoryAsync(id);
@@ -76,6 +77,7 @@ namespace RestaurantBackend.Controllers
                 CategoryName = menuItem.Category?.Name ?? "N/A",
                 Ingredients = menuItem.Ingredients,
                 IsAvailable = menuItem.IsAvailable,
+                ImageUrl = menuItem.ImageUrl, 
                 CreatedAt = menuItem.CreatedAt,
                 UpdatedAt = menuItem.UpdatedAt
             };
@@ -89,7 +91,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="categoryId">ID категории.</param>
         /// <returns>Список MenuItemResponseDto, принадлежащих указанной категории.</returns>
         [HttpGet("category/{categoryId}")]
-        [AllowAnonymous] // Доступно всем
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<MenuItemResponseDto>>> GetMenuItemsByCategoryId(Guid categoryId)
         {
             var category = await _dbContext.CategoryMenuItems.FindAsync(categoryId);
@@ -110,6 +112,7 @@ namespace RestaurantBackend.Controllers
                 CategoryName = m.Category?.Name ?? "N/A",
                 Ingredients = m.Ingredients,
                 IsAvailable = m.IsAvailable,
+                ImageUrl = m.ImageUrl, 
                 CreatedAt = m.CreatedAt,
                 UpdatedAt = m.UpdatedAt
             });
@@ -125,7 +128,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="isAvailable">Статус доступности для фильтрации (true/false). Необязательный.</param>
         /// <returns>Список MenuItemResponseDto, соответствующих критериям поиска.</returns>
         [HttpGet("search")]
-        [AllowAnonymous] // Доступно всем
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<MenuItemResponseDto>>> SearchMenuItems(
             [FromQuery] string? searchTerm,
             [FromQuery] Guid? categoryId,
@@ -143,6 +146,7 @@ namespace RestaurantBackend.Controllers
                 CategoryName = m.Category?.Name ?? "N/A",
                 Ingredients = m.Ingredients,
                 IsAvailable = m.IsAvailable,
+                ImageUrl = m.ImageUrl, 
                 CreatedAt = m.CreatedAt,
                 UpdatedAt = m.UpdatedAt
             });
@@ -156,7 +160,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="createDto">Данные для создания элемента меню.</param>
         /// <returns>Созданный MenuItemResponseDto.</returns>
         [HttpPost]
-        [Authorize(Roles = "Admin")] 
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<MenuItemResponseDto>> AddMenuItem([FromBody] CreateMenuItemDto createDto)
         {
             if (!ModelState.IsValid)
@@ -177,6 +181,7 @@ namespace RestaurantBackend.Controllers
                 CategoryId = createDto.CategoryId,
                 Ingredients = createDto.Ingredients,
                 IsAvailable = createDto.IsAvailable,
+                ImageUrl = createDto.ImageUrl, 
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -198,6 +203,7 @@ namespace RestaurantBackend.Controllers
                     CategoryName = createdMenuItemWithCategory.Category?.Name ?? "N/A",
                     Ingredients = createdMenuItemWithCategory.Ingredients,
                     IsAvailable = createdMenuItemWithCategory.IsAvailable,
+                    ImageUrl = createdMenuItemWithCategory.ImageUrl, 
                     CreatedAt = createdMenuItemWithCategory.CreatedAt,
                     UpdatedAt = createdMenuItemWithCategory.UpdatedAt
                 });
@@ -216,7 +222,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="updateDto">Данные для обновления элемента меню.</param>
         /// <returns>Обновленный MenuItemResponseDto или NotFound/BadRequest.</returns>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")] 
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<MenuItemResponseDto>> UpdateMenuItem(Guid id, [FromBody] UpdateMenuItemDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -241,6 +247,7 @@ namespace RestaurantBackend.Controllers
             menuItemToUpdate.CategoryId = updateDto.CategoryId;
             menuItemToUpdate.Ingredients = updateDto.Ingredients;
             menuItemToUpdate.IsAvailable = updateDto.IsAvailable;
+            menuItemToUpdate.ImageUrl = updateDto.ImageUrl; 
             menuItemToUpdate.UpdatedAt = DateTime.UtcNow;
 
             try
@@ -260,6 +267,7 @@ namespace RestaurantBackend.Controllers
                     CategoryName = updatedMenuItemWithCategory.Category?.Name ?? "N/A",
                     Ingredients = updatedMenuItemWithCategory.Ingredients,
                     IsAvailable = updatedMenuItemWithCategory.IsAvailable,
+                    ImageUrl = updatedMenuItemWithCategory.ImageUrl, 
                     CreatedAt = updatedMenuItemWithCategory.CreatedAt,
                     UpdatedAt = updatedMenuItemWithCategory.UpdatedAt
                 });
@@ -277,7 +285,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="id">ID элемента меню для удаления.</param>
         /// <returns>NoContent или NotFound.</returns>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")] 
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteMenuItem(Guid id)
         {
             var menuItemToDelete = await _menuItemRepository.GetByIdAsync(id);
@@ -289,7 +297,7 @@ namespace RestaurantBackend.Controllers
                 _menuItemRepository.Remove(menuItemToDelete);
                 await _menuItemRepository.SaveChangesAsync();
 
-                return NoContent(); 
+                return NoContent();
             }
             catch (Exception ex)
             {

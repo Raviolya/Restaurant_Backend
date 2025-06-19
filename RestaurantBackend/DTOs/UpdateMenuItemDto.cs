@@ -25,6 +25,8 @@ namespace RestaurantBackend.DTOs
 
         public bool IsAvailable { get; set; } 
 
-        
+        [StringLength(500, ErrorMessage = "URL картинки не может превышать 500 символов")]
+        [Url(ErrorMessage = "Некорректный формат URL картинки")]
+        public string? ImageUrl { get; set; } 
     }
 }

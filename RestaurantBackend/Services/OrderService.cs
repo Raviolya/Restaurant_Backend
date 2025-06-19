@@ -189,5 +189,12 @@ namespace RestaurantBackend.Services
                 }).ToList()
             };
         }
+
+        public async Task<IEnumerable<OrderResponseDto>> GetPendingOrdersAsync()
+        {
+            var orders = await _orderRepository.GetOrdersByStatusWithDetailsAsync("Pending");
+            return orders.Select(MapToOrderResponseDto);
+        }
+
     }
 }

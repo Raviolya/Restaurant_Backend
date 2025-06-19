@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RestaurantBackend.Models;
+using System;
 
 namespace RestaurantBackend.Data;
 
@@ -11,9 +12,7 @@ public class RestaurantDbContext : DbContext
     public DbSet<MenuItemModel> MenuItems { get; set; }
     public DbSet<OrderModel> Orders { get; set; }
     public DbSet<OrderItemModel> OrderItems { get; set; }
-
     public DbSet<CategoryMenuItemModel> CategoryMenuItems { get; set; }
-
     public DbSet<RoleUserModel> RoleUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,14 +37,14 @@ public class RestaurantDbContext : DbContext
             .HasOne(oi => oi.Order)
             .WithMany(o => o.OrderItems)
             .HasForeignKey(oi => oi.OrderId)
-            .OnDelete(DeleteBehavior.Cascade); // Важно: каскадное удаление OrderItems при удалении Order
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<OrderItemModel>()
             .HasOne(oi => oi.MenuItem)
             .WithMany()
             .HasForeignKey(oi => oi.MenuItemId);
 
-        // Добавление преобразований для DateTime свойств, чтобы гарантировать, что они всегда UTC
+        // Преобразования для DateTime
         modelBuilder.Entity<UserModel>().Property(u => u.CreatedAt).HasConversion(
             v => v,
             v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
@@ -66,6 +65,8 @@ public class RestaurantDbContext : DbContext
             v => v,
             v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
+        modelBuilder.Entity<MenuItemModel>().Property(m => m.ImageUrl).HasMaxLength(500);
+
         modelBuilder.Entity<OrderModel>().Property(o => o.CreatedAt).HasConversion(
             v => v,
             v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
@@ -78,22 +79,18 @@ public class RestaurantDbContext : DbContext
             v => v,
             v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
 
-
-        // Инициализация данных для ролей
-        var adminRoleId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        var customerRoleId = Guid.Parse("00000000-0000-0000-0000-000000000002");
-
+        
         modelBuilder.Entity<RoleUserModel>().HasData(
-            new RoleUserModel { Id = adminRoleId, Name = "Admin" },
-            new RoleUserModel { Id = customerRoleId, Name = "Customer" }
+            new RoleUserModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = "Admin" },
+            new RoleUserModel { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), Name = "Customer" }
         );
 
-        // Инициализация данных для категорий меню
         modelBuilder.Entity<CategoryMenuItemModel>().HasData(
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Основные блюда" },
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Закуски" },
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "Напитки" },
             new CategoryMenuItemModel { Id = Guid.Parse("10000000-0000-0000-0000-000000000004"), Name = "Десерты" }
         );
+        
     }
 }

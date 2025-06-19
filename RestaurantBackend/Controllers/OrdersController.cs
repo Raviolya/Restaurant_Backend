@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using RestaurantBackend.DTOs;
-using RestaurantBackend.Services; // Для IOrderService
+using RestaurantBackend.Services; 
 
 namespace RestaurantBackend.Controllers
 {
@@ -27,7 +27,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="orderDto">Данные для создания заказа.</param>
         /// <returns>Созданный OrderResponseDto.</returns>
         [HttpPost]
-        [Authorize] // Доступно аутентифицированным пользователям (клиентам)
+        [Authorize] 
         public async Task<ActionResult<OrderResponseDto>> CreateOrder([FromBody] CreateOrderDto orderDto)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -46,7 +46,6 @@ namespace RestaurantBackend.Controllers
             }
             catch (ArgumentException ex)
             {
-                // Для ошибок валидации, таких как ненайденный товар или недоступность
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
@@ -63,7 +62,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="id">ID заказа.</param>
         /// <returns>OrderResponseDto заказа.</returns>
         [HttpGet("{id}")]
-        [Authorize] // Доступно аутентифицированным пользователям
+        [Authorize] 
         public async Task<ActionResult<OrderResponseDto>> GetOrderById(Guid id)
         {
             var order = await _orderService.GetOrderDetailsAsync(id);
@@ -183,6 +182,26 @@ namespace RestaurantBackend.Controllers
             {
                 Console.WriteLine($"Ошибка при удалении заказа: {ex.Message}");
                 return StatusCode(500, $"Произошла ошибка при удалении заказа: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Получает все заказы со статусом "Pending". Доступно только администраторам.
+        /// </summary>
+        /// <returns>Список OrderResponseDto.</returns>
+        [HttpGet("pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetPendingOrders()
+        {
+            try
+            {
+                var orders = await _orderService.GetPendingOrdersAsync();
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при получении pending заказов: {ex.Message}");
+                return StatusCode(500, $"Произошла ошибка при получении pending заказов: {ex.Message}");
             }
         }
     }

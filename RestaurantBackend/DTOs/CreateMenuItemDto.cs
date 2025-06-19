@@ -24,5 +24,9 @@ namespace RestaurantBackend.DTOs
         public string[] Ingredients { get; set; } = []; 
 
         public bool IsAvailable { get; set; } = true; 
+
+        [StringLength(500, ErrorMessage = "URL картинки не может превышать 500 символов")]
+        [Url(ErrorMessage = "Некорректный формат URL картинки")]
+        public string? ImageUrl { get; set; } 
     }
 }

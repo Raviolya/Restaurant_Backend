@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.InMemory;
 using Microsoft.OpenApi.Models;
 using RestaurantBackend.Data;
 using RestaurantBackend.Repositories;
@@ -9,45 +10,51 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using BCrypt.Net;
-using StackExchange.Redis; // НОВОЕ: Для Redis
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Настройка CORS политики для разрешения запросов со всех источников
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
+        policy.WithOrigins("http://localhost:5173",
+                           "https://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
-// Добавление DbContext для работы с базой данных PostgreSQL
-builder.Services.AddDbContext<RestaurantDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ DbContext
+if (builder.Environment.IsEnvironment("IntegrationTests"))
+{
+    builder.Services.AddDbContext<RestaurantDbContext>(options =>
+        options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}"));
+}
+else
+{
+    builder.Services.AddDbContext<RestaurantDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
-// Регистрация общих репозиториев и специфичных репозиториев
+//   
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMenuItemRepository, MenuItemRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-// НОВОЕ: Регистрация репозитория для отчетов
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
-
-// Настройка Swagger/OpenAPI для генерации документации API
+//  Swagger/OpenAPI    API
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Restaurant API",
         Version = "v1",
-        Description = "API для управления рестораном"
+        Description = "API   "
     });
 
-    // Добавление схемы безопасности для JWT Bearer токенов в Swagger UI
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme",
@@ -55,7 +62,6 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer"
     });
 
-    // Добавление требования безопасности для всех эндпоинтов в Swagger UI, чтобы можно было авторизоваться
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -71,8 +77,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // Включение XML-комментариев для документации Swagger (из файлов XML)
-    // Сканируем все XML-файлы в базовом каталоге приложения
     var xmlFiles = Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly);
     foreach (var xmlFile in xmlFiles)
     {
@@ -80,7 +84,7 @@ builder.Services.AddSwaggerGen(c =>
     }
 });
 
-// Настройка JSON сериализации для контроллеров
+//  JSON   
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -88,9 +92,14 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Настройка JWT аутентификации
+//  JWT 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
+var keyString = jwtSettings["Key"];
+if (string.IsNullOrEmpty(keyString))
+{
+    throw new InvalidOperationException("JWT Key is not configured in appsettings.json.");
+}
+var key = Encoding.ASCII.GetBytes(keyString);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -107,7 +116,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key),
+        IssuerSigningKey = new SymmetricSecurityKey(key) { KeyId = "main_signing_key" },
         ClockSkew = TimeSpan.Zero
     };
 
@@ -122,19 +131,18 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection")!));
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisConnection") ?? "localhost:6379"));
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
-// Регистрация сервисов для работы с токенами и аутентификацией
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
-
 var app = builder.Build();
 
-// Включение Swagger UI для просмотра и тестирования API
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ Swagger UI пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ API
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -143,65 +151,68 @@ app.UseSwaggerUI(c =>
     c.DisplayRequestDuration();
 });
 
-// Миграция базы данных и инициализация администратора по умолчанию
-using (var scope = app.Services.CreateScope())
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+if (!app.Environment.IsEnvironment("IntegrationTests"))
 {
-    var db = scope.ServiceProvider.GetRequiredService<RestaurantDbContext>();
-    var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-
-    db.Database.Migrate();
-
-    var adminRole = await db.RoleUsers.FirstOrDefaultAsync(r => r.Name == "Admin");
-
-    if (adminRole == null)
+    using (var scope = app.Services.CreateScope())
     {
-        Console.WriteLine("ВНИМАНИЕ: Роль 'Admin' не найдена в базе данных. Невозможно создать администратора по умолчанию.");
-    }
-    else
-    {
-        var adminExists = await db.Users.AnyAsync(u => u.RoleId == adminRole.Id);
+        var db = scope.ServiceProvider.GetRequiredService<RestaurantDbContext>();
+        var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
-        if (!adminExists)
+        db.Database.Migrate();
+
+        var adminRole = await db.RoleUsers.FirstOrDefaultAsync(r => r.Name == "Admin");
+
+        if (adminRole == null)
         {
-            var defaultAdminEmail = builder.Configuration["DefaultAdmin:Email"];
-            var defaultAdminPassword = builder.Configuration["DefaultAdmin:Password"];
-            var defaultAdminPhone = builder.Configuration["DefaultAdmin:Phone"];
-            var defaultAdminName = builder.Configuration["DefaultAdmin:Name"];
-
-            if (string.IsNullOrEmpty(defaultAdminEmail) || string.IsNullOrEmpty(defaultAdminPassword))
-            {
-                Console.WriteLine("ВНИМАНИЕ: Не удалось создать администратора по умолчанию. Проверьте секции 'DefaultAdmin:Email' и 'DefaultAdmin:Password' в конфигурации.");
-            }
-            else
-            {
-                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultAdminPassword);
-
-                var defaultAdminUser = new RestaurantBackend.Models.UserModel
-                {
-                    Id = Guid.NewGuid(),
-                    Email = defaultAdminEmail,
-                    Phone = defaultAdminPhone ?? "00000000000",
-                    Name = defaultAdminName ?? "Default Admin",
-                    PasswordHash = hashedPassword,
-                    RoleId = adminRole.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                await userRepository.AddAsync(defaultAdminUser);
-                await userRepository.SaveChangesAsync();
-
-                Console.WriteLine($"Администратор по умолчанию '{defaultAdminEmail}' успешно создан.");
-            }
+            Console.WriteLine("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅ 'Admin' пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.");
         }
         else
         {
-            Console.WriteLine("Администратор уже существует. Пропускаем создание администратора по умолчанию.");
+            var adminExists = await db.Users.AnyAsync(u => u.RoleId == adminRole.Id);
+
+            if (!adminExists)
+            {
+                var defaultAdminEmail = builder.Configuration["DefaultAdmin:Email"];
+                var defaultAdminPassword = builder.Configuration["DefaultAdmin:Password"];
+                var defaultAdminPhone = builder.Configuration["DefaultAdmin:Phone"];
+                var defaultAdminName = builder.Configuration["DefaultAdmin:Name"];
+
+                if (string.IsNullOrEmpty(defaultAdminEmail) || string.IsNullOrEmpty(defaultAdminPassword))
+                {
+                    Console.WriteLine("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ 'DefaultAdmin:Email' пїЅ 'DefaultAdmin:Password' пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.");
+                }
+                else
+                {
+                    var hashedPassword = BCrypt.Net.BCrypt.HashPassword(defaultAdminPassword);
+
+                    var defaultAdminUser = new RestaurantBackend.Models.UserModel
+                    {
+                        Id = Guid.NewGuid(),
+                        Email = defaultAdminEmail,
+                        Phone = defaultAdminPhone ?? "00000000000",
+                        Name = defaultAdminName ?? "Default Admin",
+                        PasswordHash = hashedPassword,
+                        RoleId = adminRole.Id,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    await userRepository.AddAsync(defaultAdminUser);
+                    await userRepository.SaveChangesAsync();
+
+                    Console.WriteLine($"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ '{defaultAdminEmail}' пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.");
+            }
         }
     }
 }
 
-// Custom middleware для автоматического обновления access токена
+// Custom middleware пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ access пїЅпїЅпїЅпїЅпїЅпїЅ
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
@@ -250,13 +261,13 @@ app.Use(async (context, next) =>
                     }
                     catch (SecurityTokenException ex)
                     {
-                        Console.WriteLine($"Ошибка обновления токена: {ex.Message}");
+                        Console.WriteLine($"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
                         context.Response.Cookies.Delete("access_token");
                         context.Response.Cookies.Delete("refresh_token");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Непредвиденная ошибка при обновлении токена: {ex.Message}");
+                        Console.WriteLine($"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
                     }
                 }
             }
@@ -266,16 +277,15 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Перенаправление HTTP запросов на HTTPS
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ HTTP пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ HTTPS
 app.UseHttpsRedirection();
-// Включение CORS политики
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CORS пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 app.UseCors("AllowAll");
-// Включение middleware аутентификации (проверяет наличие и валидность токенов)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ middleware пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 app.UseAuthentication();
-// Включение middleware авторизации (проверяет права доступа на основе ролей/политик)
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ middleware пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 app.UseAuthorization();
-// Маппинг контроллеров для обработки входящих HTTP запросов
+// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 app.MapControllers();
 
-// Запуск приложения
 app.Run();

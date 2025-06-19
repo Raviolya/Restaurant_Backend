@@ -12,9 +12,7 @@ using System.Security.Claims;
 
 namespace RestaurantBackend.Controllers
 {
-    // [Authorize(Roles = "Admin")] указывает, что все методы в этом контроллере
-    // доступны только пользователям с ролью "Admin".
-    [Authorize(Roles = "Admin")]
+    
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
@@ -33,6 +31,7 @@ namespace RestaurantBackend.Controllers
         /// </summary>
         /// <returns>Список UserResponseDto.</returns>
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetUsers()
         {
             var users = await _userRepository.GetAllAsync(); 
@@ -49,12 +48,116 @@ namespace RestaurantBackend.Controllers
             return Ok(userDtos);
         }
 
+
+        /// <summary>
+        /// Обновляет данные текущего аутентифицированного пользователя.
+        /// Доступно только аутентифицированным пользователям для обновления своих данных.
+        /// </summary>
+        /// <param name="updateDto">Данные для обновления пользователя.</param>
+        /// <returns>Обновленный UserResponseDto или NotFound/BadRequest.</returns>
+        [HttpPut("current")]
+        [Authorize] 
+        public async Task<ActionResult<CurrentUserProfileDto>> UpdateCurrentUser([FromBody] UpdateCurrentUserDto updateDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var currentUserId))
+            {
+                return Unauthorized("Не удалось определить ID текущего пользователя.");
+            }
+
+            var userToUpdate = await _userRepository.GetUserByIdWithRoleAsync(currentUserId);
+            if (userToUpdate == null)
+            {
+                return NotFound("Информация о текущем пользователе не найдена.");
+            }
+
+            var existingUserWithEmail = await _userRepository.GetByEmailAsync(updateDto.Email);
+            if (existingUserWithEmail != null && existingUserWithEmail.Id != currentUserId)
+            {
+                return Conflict("Пользователь с таким email уже существует.");
+            }
+
+            var existingUserWithPhone = await _userRepository.GetByPhoneAsync(updateDto.Phone);
+            if (existingUserWithPhone != null && existingUserWithPhone.Id != currentUserId)
+            {
+                return Conflict("Пользователь с таким телефоном уже существует.");
+            }
+
+            userToUpdate.Email = updateDto.Email;
+            userToUpdate.Phone = updateDto.Phone;
+            userToUpdate.Name = $"{updateDto.FirstName} {updateDto.LastName}";
+            userToUpdate.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                _userRepository.Update(userToUpdate);
+                await _userRepository.SaveChangesAsync();
+
+                var updatedUserDto = new CurrentUserProfileDto
+                {
+                    Id = userToUpdate.Id,
+                    Email = userToUpdate.Email,
+                    Name = userToUpdate.Name,
+                    Role = userToUpdate.Role?.Name ?? "Unknown",
+                    Phone = userToUpdate.Phone
+                };
+
+                return Ok(updatedUserDto);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при обновлении текущего пользователя: {ex.Message}");
+                return StatusCode(500, $"Произошла ошибка при обновлении пользователя: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Получает информацию о текущем аутентифицированном пользователе.
+        /// Доступно аутентифицированным пользователям.
+        /// </summary>
+        /// <returns>CurrentUserProfileDto текущего пользователя.</returns>
+        [HttpGet("current")]
+        [Authorize]
+        public async Task<ActionResult<CurrentUserProfileDto>> GetCurrentUser() 
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                return Unauthorized("Не удалось определить ID текущего пользователя.");
+            }
+
+            var user = await _userRepository.GetUserByIdWithRoleAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound("Информация о текущем пользователе не найдена.");
+            }
+
+            var userDto = new CurrentUserProfileDto 
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Name = user.Name,
+                Role = user.Role?.Name ?? "Unknown",
+                Phone = user.Phone 
+            };
+
+            return Ok(userDto);
+        }
+
         /// <summary>
         /// Регистрирует нового администратора. Доступно только существующим администраторам.
         /// </summary>
         /// <param name="userDto">Данные для создания нового администратора.</param>
         /// <returns>Созданный UserResponseDto.</returns>
         [HttpPost("register-admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<UserResponseDto>> RegisterAdmin([FromBody] CreateUserDto userDto)
         {
             if (!ModelState.IsValid)
@@ -113,6 +216,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="id">ID пользователя.</param>
         /// <returns>UserResponseDto или NotFound.</returns>
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<UserResponseDto>> GetUserById(Guid id)
         {
             var user = await _userRepository.GetUserByIdWithRoleAsync(id); 
@@ -139,6 +243,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="roleId">ID роли для фильтрации. Необязательный.</param>
         /// <returns>Список UserResponseDto, соответствующих критериям поиска.</returns>
         [HttpGet("search")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserResponseDto>>> SearchUsers(
             [FromQuery] string? searchTerm,
             [FromQuery] Guid? roleId)
@@ -163,6 +268,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="userDto">Данные для обновления пользователя.</param>
         /// <returns>Обновленный UserResponseDto или NotFound/BadRequest.</returns>
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<UserResponseDto>> UpdateUser(Guid id, [FromBody] UpdateUserDto userDto)
         {
             if (!ModelState.IsValid)
@@ -219,6 +325,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="id">ID пользователя для удаления.</param>
         /// <returns>NoContent или NotFound.</returns>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteUser(Guid id)
         {
             var userToDelete = await _userRepository.GetByIdAsync(id); 
@@ -252,6 +359,7 @@ namespace RestaurantBackend.Controllers
         /// <param name="passwordUpdateDto">DTO с новым паролем.</param>
         /// <returns>Ok или NotFound/BadRequest.</returns>
         [HttpPut("{id}/password")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUserPassword(Guid id, [FromBody] PasswordUpdateDto passwordUpdateDto)
         {
             if (!ModelState.IsValid)

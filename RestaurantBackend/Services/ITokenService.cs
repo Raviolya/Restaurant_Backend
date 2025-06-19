@@ -34,9 +34,9 @@ namespace RestaurantBackend.Services
                 new Claim(ClaimTypes.Role, user.Role?.Name ?? "Unknown")
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                _configuration["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var keyBytes = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+            var securityKey = new SymmetricSecurityKey(keyBytes) { KeyId = "main_signing_key" };
+            var creds = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],

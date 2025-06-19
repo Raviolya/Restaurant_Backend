@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace RestaurantBackend.Services
 {
     /// <summary>
-    /// Сервис для генерации отчетов с использованием кэширования.
+    /// Сервис для генерации отчетов.
     /// </summary>
     public class ReportService : IReportService
     {

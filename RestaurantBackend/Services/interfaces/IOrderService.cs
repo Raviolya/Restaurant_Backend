@@ -52,5 +52,8 @@ namespace RestaurantBackend.Services
         /// <param name="orderId">ID заказа.</param>
         /// <returns>True, если заказ успешно удален, иначе False.</returns>
         Task<bool> DeleteOrderAsync(Guid orderId);
+
+        Task<IEnumerable<OrderResponseDto>> GetPendingOrdersAsync();
+
     }
 }
