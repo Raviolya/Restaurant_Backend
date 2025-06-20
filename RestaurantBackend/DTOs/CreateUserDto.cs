@@ -24,7 +24,7 @@ namespace RestaurantBackend.DTOs
 
         [Required(ErrorMessage = "Пароль обязателен")]
         [StringLength(100, MinimumLength = 8, ErrorMessage = "Пароль должен быть от 8 до 100 символов")]
-        [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$",
+        [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&_\-\[\]\{\}\(\);:,<>\.\+=])[A-Za-z\d@$!%*#?&_\-\[\]\{\}\(\);:,<>\.\+=]{8,}$",
             ErrorMessage = "Пароль должен содержать буквы, цифры и специальные символы")]
         public string Password { get; set; }
 
