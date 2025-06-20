@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "qobSAmc6ZTGlHRUbAIXQ9p8qzlGadQFuCh+rO93JuJM=",
+  "Source": "RestaurantBackend",
+  "BasePath": "_content/RestaurantBackend",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

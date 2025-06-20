@@ -1,0 +1,739 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>RestaurantBackend</name>
+    </assembly>
+    <members>
+        <member name="T:RestaurantBackend.Controllers.CategoriesController">
+            <summary>
+            Управление категориями меню
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.CategoriesController.GetCategories">
+            <summary>
+            Получить все категории меню
+            </summary>
+            <response code="200">Возвращает список категорий</response>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.CategoriesController.CreateCategory(System.String)">
+            <summary>
+            Создать новую категорию
+            </summary>
+            <param name="name">Название категории</param>
+            <response code="201">Категория успешно создана</response>
+            <response code="400">Некорректные данные</response>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.GetAllMenuItems">
+            <summary>
+            Получает полный список всех элементов меню.
+            </summary>
+            <returns>Список MenuItemResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.GetMenuItemById(System.Guid)">
+            <summary>
+            Получает элемент меню по его ID.
+            </summary>
+            <param name="id">ID элемента меню.</param>
+            <returns>MenuItemResponseDto или NotFound.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.GetMenuItemsByCategoryId(System.Guid)">
+            <summary>
+            Получает элементы меню по ID категории.
+            </summary>
+            <param name="categoryId">ID категории.</param>
+            <returns>Список MenuItemResponseDto, принадлежащих указанной категории.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.SearchMenuItems(System.String,System.Nullable{System.Guid},System.Nullable{System.Boolean})">
+            <summary>
+            Ищет элементы меню по названию, описанию, категории или статусу доступности.
+            </summary>
+            <param name="searchTerm">Термин для поиска (название, описание). Необязательный.</param>
+            <param name="categoryId">ID категории для фильтрации. Необязательный.</param>
+            <param name="isAvailable">Статус доступности для фильтрации (true/false). Необязательный.</param>
+            <returns>Список MenuItemResponseDto, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.AddMenuItem(RestaurantBackend.DTOs.CreateMenuItemDto)">
+            <summary>
+            Добавляет новый элемент меню. Доступно только администраторам.
+            </summary>
+            <param name="createDto">Данные для создания элемента меню.</param>
+            <returns>Созданный MenuItemResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.UpdateMenuItem(System.Guid,RestaurantBackend.DTOs.UpdateMenuItemDto)">
+            <summary>
+            Обновляет существующий элемент меню по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID элемента меню для обновления.</param>
+            <param name="updateDto">Данные для обновления элемента меню.</param>
+            <returns>Обновленный MenuItemResponseDto или NotFound/BadRequest.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.MenuItemsController.DeleteMenuItem(System.Guid)">
+            <summary>
+            Удаляет элемент меню по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID элемента меню для удаления.</param>
+            <returns>NoContent или NotFound.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.CreateOrder(RestaurantBackend.DTOs.CreateOrderDto)">
+            <summary>
+            Создает новый заказ для текущего аутентифицированного пользователя.
+            </summary>
+            <param name="orderDto">Данные для создания заказа.</param>
+            <returns>Созданный OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.GetOrderById(System.Guid)">
+            <summary>
+            Получает детальную информацию о заказе по его ID.
+            Пользователь может просматривать только свои заказы, админ - любые.
+            </summary>
+            <param name="id">ID заказа.</param>
+            <returns>OrderResponseDto заказа.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.GetMyOrders">
+            <summary>
+            Получает все заказы текущего аутентифицированного пользователя.
+            </summary>
+            <returns>Список OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.GetAllOrdersForAdmin">
+            <summary>
+            Получает все заказы в системе. Доступно только администраторам.
+            </summary>
+            <returns>Список OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.UpdateOrderStatus(System.Guid,System.String)">
+            <summary>
+            Обновляет статус заказа. Доступно только администраторам.
+            </summary>
+            <param name="id">ID заказа.</param>
+            <param name="newStatus">Новый статус заказа (например, "Pending", "Preparing", "Completed", "Cancelled").</param>
+            <returns>Обновленный OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.DeleteOrder(System.Guid)">
+            <summary>
+            Удаляет заказ по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID заказа для удаления.</param>
+            <returns>NoContent или NotFound.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.OrdersController.GetPendingOrders">
+            <summary>
+            Получает все заказы со статусом "Pending". Доступно только администраторам.
+            </summary>
+            <returns>Список OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.ReportsController.GetSalesReport(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет о продажах за указанный период.
+            </summary>
+            <param name="startDate">Начальная дата периода (формат YYYY-MM-DD).</param>
+            <param name="endDate">Конечная дата периода (формат YYYY-MM-DD).</param>
+            <param name="forceRefresh">Принудительно обновить кэш и пересчитать отчет (по умолчанию false).</param>
+            <returns>Отчет о продажах SalesReportDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.ReportsController.GetRevenueReport(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет об общей выручке за указанный период.
+            </summary>
+            <param name="startDate">Начальная дата периода (формат YYYY-MM-DD).</param>
+            <param name="endDate">Конечная дата периода (формат YYYY-MM-DD).</param>
+            <param name="forceRefresh">Принудительно обновить кэш и пересчитать отчет (по умолчанию false).</param>
+            <returns>Отчет об общей выручке RevenueReportDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.GetUsers">
+            <summary>
+            Получает список всех пользователей. Доступно только администраторам.
+            </summary>
+            <returns>Список UserResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.UpdateCurrentUser(RestaurantBackend.DTOs.UpdateCurrentUserDto)">
+            <summary>
+            Обновляет данные текущего аутентифицированного пользователя.
+            Доступно только аутентифицированным пользователям для обновления своих данных.
+            </summary>
+            <param name="updateDto">Данные для обновления пользователя.</param>
+            <returns>Обновленный UserResponseDto или NotFound/BadRequest.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.GetCurrentUser">
+            <summary>
+            Получает информацию о текущем аутентифицированном пользователе.
+            Доступно аутентифицированным пользователям.
+            </summary>
+            <returns>CurrentUserProfileDto текущего пользователя.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.RegisterAdmin(RestaurantBackend.DTOs.CreateUserDto)">
+            <summary>
+            Регистрирует нового администратора. Доступно только существующим администраторам.
+            </summary>
+            <param name="userDto">Данные для создания нового администратора.</param>
+            <returns>Созданный UserResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.GetUserById(System.Guid)">
+            <summary>
+            Получает пользователя по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID пользователя.</param>
+            <returns>UserResponseDto или NotFound.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.SearchUsers(System.String,System.Nullable{System.Guid})">
+            <summary>
+            Ищет пользователей по email, имени или телефону, с возможностью фильтрации по роли.
+            Доступно только администраторам.
+            </summary>
+            <param name="searchTerm">Термин для поиска (email, имя, телефон). Необязательный.</param>
+            <param name="roleId">ID роли для фильтрации. Необязательный.</param>
+            <returns>Список UserResponseDto, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.UpdateUser(System.Guid,RestaurantBackend.DTOs.UpdateUserDto)">
+            <summary>
+            Обновляет данные пользователя по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID пользователя для обновления.</param>
+            <param name="userDto">Данные для обновления пользователя.</param>
+            <returns>Обновленный UserResponseDto или NotFound/BadRequest.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.DeleteUser(System.Guid)">
+            <summary>
+            Удаляет пользователя по его ID. Доступно только администраторам.
+            </summary>
+            <param name="id">ID пользователя для удаления.</param>
+            <returns>NoContent или NotFound.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Controllers.UsersController.UpdateUserPassword(System.Guid,RestaurantBackend.DTOs.PasswordUpdateDto)">
+            <summary>
+            Обновляет пароль пользователя. Доступно только администраторам.
+            </summary>
+            <param name="id">ID пользователя, чей пароль нужно обновить.</param>
+            <param name="passwordUpdateDto">DTO с новым паролем.</param>
+            <returns>Ok или NotFound/BadRequest.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.GetByEmailAsync(System.String)">
+            <summary>
+            Асинхронно получает пользователя по его email. Включает связанную роль.
+            </summary>
+            <param name="email">Email пользователя.</param>
+            <returns>UserModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.GetByPhoneAsync(System.String)">
+            <summary>
+            Асинхронно получает пользователя по его номеру телефона.
+            </summary>
+            <param name="phone">Номер телефона пользователя.</param>
+            <returns>UserModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.UserExists(System.String,System.String)">
+            <summary>
+            Проверяет, существует ли пользователь с заданным email или номером телефона.
+            </summary>
+            <param name="email">Email для проверки.</param>
+            <param name="phone">Номер телефона для проверки.</param>
+            <returns>True, если пользователь существует, иначе False.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.GetUserByRefreshToken(System.String)">
+            <summary>
+            Асинхронно получает пользователя по его refresh токену,
+            если токен совпадает и не истек. Включает связанную роль.
+            </summary>
+            <param name="refreshToken">Refresh токен пользователя.</param>
+            <returns>UserModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.GetUserByIdWithRoleAsync(System.Guid)">
+            <summary>
+            Асинхронно получает пользователя по его ID, включая связанную роль.
+            </summary>
+            <param name="id">ID пользователя.</param>
+            <returns>UserModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Data.UserRepository.SearchUsersAsync(System.String,System.Nullable{System.Guid})">
+            <summary>
+            Асинхронно ищет пользователей по email, имени или телефону, с возможностью фильтрации по роли.
+            </summary>
+            <param name="searchTerm">Термин для поиска (email, имя, телефон).</param>
+            <param name="roleId">ID роли для фильтрации.</param>
+            <returns>Коллекция UserModel, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.CreateMenuItemDto">
+            <summary>
+            DTO для создания нового элемента меню.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.CreateOrderDto">
+            <summary>
+            DTO для создания нового заказа.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.MenuItemResponseDto">
+            <summary>
+            DTO для отображения информации об элементе меню.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.OrderItemCreateDto">
+            <summary>
+            DTO для элемента заказа при создании нового заказа.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.OrderItemResponseDto">
+            <summary>
+            DTO для отображения информации об элементе заказа в ответе.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.OrderResponseDto">
+            <summary>
+            DTO для отображения полной информации о заказе.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.RevenueReportDto">
+            <summary>
+            DTO для отчета об общей выручке.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.SalesReportDto">
+            <summary>
+            DTO для полного отчета о продажах.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.SalesReportItemDto">
+            <summary>
+            DTO для элемента в отчете о продажах (отдельная позиция меню).
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.DTOs.UpdateMenuItemDto">
+            <summary>
+            DTO для обновления существующего элемента меню.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Migrations.AddUtcDateTimeConversions">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddUtcDateTimeConversions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddUtcDateTimeConversions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddUtcDateTimeConversions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Migrations.AddMenuItemsFeatures">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemsFeatures.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemsFeatures.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemsFeatures.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Migrations.AddOrdersFeatures">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddOrdersFeatures.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddOrdersFeatures.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddOrdersFeatures.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Migrations.AddReportFeaturesAndOrderDateTimeConversions">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddReportFeaturesAndOrderDateTimeConversions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddReportFeaturesAndOrderDateTimeConversions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddReportFeaturesAndOrderDateTimeConversions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Migrations.AddMenuItemImageUrl">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemImageUrl.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemImageUrl.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:RestaurantBackend.Migrations.AddMenuItemImageUrl.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:RestaurantBackend.Repositories.Interfaces.IMenuItemRepository">
+            <summary>
+            Интерфейс репозитория для работы с элементами меню (MenuItemModel).
+            Расширяет общий репозиторий IRepository для базовых CRUD операций.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IMenuItemRepository.GetMenuItemByIdWithCategoryAsync(System.Guid)">
+            <summary>
+            Асинхронно получает элемент меню по его ID, включая связанную категорию.
+            </summary>
+            <param name="id">ID элемента меню.</param>
+            <returns>MenuItemModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IMenuItemRepository.GetMenuItemsByCategoryAsync(System.Guid)">
+            <summary>
+            Асинхронно получает список элементов меню по ID категории. Включает связанную категорию.
+            </summary>
+            <param name="categoryId">ID категории.</param>
+            <returns>Коллекция MenuItemModel, принадлежащих указанной категории.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IMenuItemRepository.SearchMenuItemsAsync(System.String,System.Nullable{System.Guid},System.Nullable{System.Boolean})">
+            <summary>
+            Асинхронно ищет элементы меню по названию, описанию, категории или статусу доступности.
+            </summary>
+            <param name="searchTerm">Термин для поиска по названию или описанию (опционально).</param>
+            <param name="categoryId">ID категории для фильтрации (опционально).</param>
+            <param name="isAvailable">Статус доступности для фильтрации (опционально).</param>
+            <returns>Коллекция MenuItemModel, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Repositories.Interfaces.IOrderRepository">
+            <summary>
+            Интерфейс репозитория для работы с заказами.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IOrderRepository.GetOrderByIdWithDetailsAsync(System.Guid)">
+            <summary>
+            Получает заказ по его ID, включая все элементы заказа и связанные с ними меню.
+            </summary>
+            <param name="orderId">ID заказа.</param>
+            <returns>OrderModel или null.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IOrderRepository.GetUserOrdersWithDetailsAsync(System.Guid)">
+            <summary>
+            Получает все заказы для конкретного пользователя, включая элементы заказа.
+            </summary>
+            <param name="userId">ID пользователя.</param>
+            <returns>Коллекция OrderModel.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IOrderRepository.GetAllOrdersWithDetailsAsync">
+            <summary>
+            Получает все заказы с деталями для административного просмотра (включая пользователя и элементы меню).
+            </summary>
+            <returns>Коллекция OrderModel.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IOrderRepository.GetOrdersByStatusWithDetailsAsync(System.String)">
+            <summary>
+            Получает заказы по статусу, включая элементы заказа.
+            </summary>
+            <param name="status">Статус заказа.</param>
+            <returns>Коллекция OrderModel.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Repositories.Interfaces.IReportRepository">
+            <summary>
+            Интерфейс репозитория для получения данных, необходимых для отчетов.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IReportRepository.GetCompletedAndProcessingOrdersWithDetailsAsync(System.DateTime,System.DateTime)">
+            <summary>
+            Получает все завершенные или находящиеся в процессе заказы за определенный период,
+            включая элементы заказа и связанные с ними элементы меню и их категории.
+            </summary>
+            <param name="startDate">Начальная дата периода (UTC).</param>
+            <param name="endDate">Конечная дата периода (UTC).</param>
+            <returns>Коллекция OrderModel с деталями.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IUserRepository.GetUserByIdWithRoleAsync(System.Guid)">
+            <summary>
+            Асинхронно получает пользователя по его ID, включая связанную роль.
+            </summary>
+            <param name="id">ID пользователя.</param>
+            <returns>UserModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.Interfaces.IUserRepository.SearchUsersAsync(System.String,System.Nullable{System.Guid})">
+            <summary>
+            Асинхронно ищет пользователей по email, имени или телефону.
+            </summary>
+            <param name="searchTerm">Термин для поиска по email, имени или телефону (опционально).</param>
+            <param name="roleId">ID роли для фильтрации (опционально).</param>
+            <returns>Коллекция UserModel, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Repositories.MenuItemRepository">
+            <summary>
+            Реализация репозитория для работы с элементами меню (MenuItemModel).
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.MenuItemRepository.GetMenuItemByIdWithCategoryAsync(System.Guid)">
+            <summary>
+            Асинхронно получает элемент меню по его ID, включая связанную категорию.
+            </summary>
+            <param name="id">ID элемента меню.</param>
+            <returns>MenuItemModel или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.MenuItemRepository.GetMenuItemsByCategoryAsync(System.Guid)">
+            <summary>
+            Асинхронно получает список элементов меню по ID категории. Включает связанную категорию.
+            </summary>
+            <param name="categoryId">ID категории.</param>
+            <returns>Коллекция MenuItemModel, принадлежащих указанной категории.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.MenuItemRepository.SearchMenuItemsAsync(System.String,System.Nullable{System.Guid},System.Nullable{System.Boolean})">
+            <summary>
+            Асинхронно ищет элементы меню по названию, описанию, категории или статусу доступности.
+            </summary>
+            <param name="searchTerm">Термин для поиска по названию или описанию (опционально).</param>
+            <param name="categoryId">ID категории для фильтрации (опционально).</param>
+            <param name="isAvailable">Статус доступности для фильтрации (опционально).</param>
+            <returns>Коллекция MenuItemModel, соответствующих критериям поиска.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Repositories.OrderRepository">
+            <summary>
+            Реализация репозитория для работы с заказами.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.OrderRepository.GetOrderByIdWithDetailsAsync(System.Guid)">
+            <summary>
+            Получает заказ по его ID, включая все элементы заказа, связанные с ними меню и пользователя.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.OrderRepository.GetUserOrdersWithDetailsAsync(System.Guid)">
+            <summary>
+            Получает все заказы для конкретного пользователя, включая элементы заказа и меню.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.OrderRepository.GetAllOrdersWithDetailsAsync">
+            <summary>
+            Получает все заказы с деталями для административного просмотра.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.OrderRepository.GetOrdersByStatusWithDetailsAsync(System.String)">
+            <summary>
+            Получает заказы по статусу, включая элементы заказа, меню и пользователя.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.Repositories.ReportRepository">
+            <summary>
+            Репозиторий для получения данных, необходимых для отчетов.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Repositories.ReportRepository.GetCompletedAndProcessingOrdersWithDetailsAsync(System.DateTime,System.DateTime)">
+            <summary>
+            Получает все завершенные или находящиеся в процессе заказы за определенный период,
+            включая элементы заказа и связанные с ними элементы меню и их категории.
+            </summary>
+            <param name="startDate">Начальная дата периода (UTC).</param>
+            <param name="endDate">Конечная дата периода (UTC).</param>
+            <returns>Коллекция OrderModel с деталями.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.AuthService.Login(RestaurantBackend.DTOs.LoginDto)">
+            <summary>
+            Проверяет учетные данные пользователя и выдает токены.
+            </summary>
+            <param name="loginDto">Email и пароль пользователя.</param>
+            <returns>AuthResponse с токенами и информацией о пользователе.</returns>
+            <exception cref="T:System.UnauthorizedAccessException">Если учетные данные недействительны.</exception>
+        </member>
+        <member name="M:RestaurantBackend.Services.AuthService.RefreshToken(System.String,System.String)">
+            <summary>
+            Обновляет access и refresh токены с помощью существующего refresh токена.
+            </summary>
+            <param name="token">Истекший access токен.</param>
+            <param name="refreshToken">Текущий refresh токен.</param>
+            <returns>AuthResponse с новыми токенами.</returns>
+            <exception cref="T:Microsoft.IdentityModel.Tokens.SecurityTokenException">Если refresh токен недействителен или истек.</exception>
+        </member>
+        <member name="M:RestaurantBackend.Services.AuthService.RevokeToken(System.String)">
+            <summary>
+            Отзывает refresh токен пользователя, делая его непригодным для дальнейшего использования.
+            </summary>
+            <param name="email">Email пользователя, чей токен отзывается.</param>
+            <returns>True, если токен успешно отозван, False в противном случае.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Services.ICacheService">
+            <summary>
+            Интерфейс для сервиса кэширования.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.ICacheService.GetAsync``1(System.String)">
+            <summary>
+            Получает данные из кэша.
+            </summary>
+            <typeparam name="T">Тип данных.</typeparam>
+            <param name="key">Ключ кэша.</param>
+            <returns>Объект T из кэша или null, если не найден.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.ICacheService.SetAsync``1(System.String,``0,System.Nullable{System.TimeSpan})">
+            <summary>
+            Устанавливает данные в кэш.
+            </summary>
+            <typeparam name="T">Тип данных.</typeparam>
+            <param name="key">Ключ кэша.</param>
+            <param name="value">Значение для кэширования.</param>
+            <param name="expiration">Срок действия кэша (опционально, по умолчанию 5 минут).</param>
+        </member>
+        <member name="M:RestaurantBackend.Services.ICacheService.RemoveAsync(System.String)">
+            <summary>
+            Удаляет данные из кэша.
+            </summary>
+            <param name="key">Ключ кэша.</param>
+            <returns>True, если успешно удалено, иначе False.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Services.IOrderService">
+            <summary>
+            Интерфейс сервиса для управления заказами.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.CreateOrderAsync(System.Guid,RestaurantBackend.DTOs.CreateOrderDto)">
+            <summary>
+            Создает новый заказ для пользователя.
+            </summary>
+            <param name="userId">ID пользователя, создающего заказ.</param>
+            <param name="orderDto">DTO с элементами заказа.</param>
+            <returns>OrderResponseDto созданного заказа.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.GetOrderDetailsAsync(System.Guid)">
+            <summary>
+            Получает детальную информацию о заказе по его ID.
+            </summary>
+            <param name="orderId">ID заказа.</param>
+            <returns>OrderResponseDto заказа.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.GetUserOrdersAsync(System.Guid)">
+            <summary>
+            Получает все заказы для указанного пользователя.
+            </summary>
+            <param name="userId">ID пользователя.</param>
+            <returns>Коллекция OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.GetAllOrdersForAdminAsync">
+            <summary>
+            Получает все заказы для административного просмотра.
+            </summary>
+            <returns>Коллекция OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.UpdateOrderStatusAsync(System.Guid,System.String)">
+            <summary>
+            Обновляет статус заказа.
+            </summary>
+            <param name="orderId">ID заказа.</param>
+            <param name="newStatus">Новый статус заказа (например, "Pending", "Preparing", "Completed", "Cancelled").</param>
+            <returns>Обновленный OrderResponseDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IOrderService.DeleteOrderAsync(System.Guid)">
+            <summary>
+            Удаляет заказ по его ID.
+            </summary>
+            <param name="orderId">ID заказа.</param>
+            <returns>True, если заказ успешно удален, иначе False.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Services.IReportService">
+            <summary>
+            Интерфейс сервиса для генерации отчетов.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.IReportService.GetSalesReportAsync(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет о продажах за указанный период.
+            </summary>
+            <param name="startDate">Начальная дата периода (UTC).</param>
+            <param name="endDate">Конечная дата периода (UTC).</param>
+            <param name="forceRefresh">Если true, принудительно обновить кэш и пересчитать отчет.</param>
+            <returns>Отчет о продажах SalesReportDto.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.IReportService.GetRevenueReportAsync(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет об общей выручке за указанный период.
+            </summary>
+            <param name="startDate">Начальная дата периода (UTC).</param>
+            <param name="endDate">Конечная дата периода (UTC).</param>
+            <param name="forceRefresh">Если true, принудительно обновить кэш и пересчитать отчет.</param>
+            <returns>Отчет об общей выручке RevenueReportDto.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Services.RedisCacheService">
+            <summary>
+            Реализация сервиса кэширования с использованием Redis.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.RedisCacheService.GetAsync``1(System.String)">
+            <summary>
+            Получает данные из кэша.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.RedisCacheService.SetAsync``1(System.String,``0,System.Nullable{System.TimeSpan})">
+            <summary>
+            Устанавливает данные в кэш.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.RedisCacheService.RemoveAsync(System.String)">
+            <summary>
+            Удаляет данные из кэша.
+            </summary>
+        </member>
+        <member name="T:RestaurantBackend.Services.OrderService">
+            <summary>
+            Сервис для управления заказами.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.CreateOrderAsync(System.Guid,RestaurantBackend.DTOs.CreateOrderDto)">
+            <summary>
+            Создает новый заказ для пользователя.
+            </summary>
+            <param name="userId">ID пользователя, создающего заказ.</param>
+            <param name="orderDto">DTO с элементами заказа.</param>
+            <returns>OrderResponseDto созданного заказа.</returns>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.GetOrderDetailsAsync(System.Guid)">
+            <summary>
+            Получает детальную информацию о заказе по его ID.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.GetUserOrdersAsync(System.Guid)">
+            <summary>
+            Получает все заказы для указанного пользователя.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.GetAllOrdersForAdminAsync">
+            <summary>
+            Получает все заказы для административного просмотра.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.UpdateOrderStatusAsync(System.Guid,System.String)">
+            <summary>
+            Обновляет статус заказа.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.DeleteOrderAsync(System.Guid)">
+            <summary>
+            Удаляет заказ по его ID.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.OrderService.MapToOrderResponseDto(RestaurantBackend.Models.OrderModel)">
+            <summary>
+            Вспомогательный метод для маппинга OrderModel в OrderResponseDto.
+            </summary>
+            <param name="order">Исходная OrderModel.</param>
+            <returns>OrderResponseDto.</returns>
+        </member>
+        <member name="T:RestaurantBackend.Services.ReportService">
+            <summary>
+            Сервис для генерации отчетов.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.ReportService.GetSalesReportAsync(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет о продажах за указанный период с кэшированием.
+            </summary>
+        </member>
+        <member name="M:RestaurantBackend.Services.ReportService.GetRevenueReportAsync(System.DateTime,System.DateTime,System.Boolean)">
+            <summary>
+            Генерирует отчет об общей выручке за указанный период с кэшированием.
+            </summary>
+        </member>
+    </members>
+</doc>
